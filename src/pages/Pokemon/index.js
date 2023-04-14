@@ -1,53 +1,88 @@
 import React, {useEffect, useReducer, useState} from 'react';
 import {useDispatch, useSelector} from "react-redux";
-import {getPokemon, searchPokemon, updateState} from "../../redux/actions/pokemonAction";
+import {getMorePokemon, getPokemon, getPokemonTypes, searchPokemon, updateState, filterByTag} from "../../redux/actions/pokemonAction";
 import {Card, Col, Row, Tag, Divider, Modal, Button, Input} from 'antd';
 import {SearchOutlined} from '@ant-design/icons';
 
 const {CheckableTag} = Tag;
 
 const Pokemon = (props) => {
-
-    const [selectedTags, setSelectedTags] = useState([]);
+    const [offsets, setOffsets] = useState([12, 24, 60]);
+    const [selectedOffset, setSelectedOffset] = useState(12);
+    const [selectedTags, setSelectedTags] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPokemon, setSelectedPokemon] = useState(null);
     const [search, setSearch] = useState("");
-    const {page, limit, pokemonList, pokemonShow} = useSelector((state) => state.pokemon)
+    const {page, limit, pokemonList, pokemonShow, types} = useSelector((state) => state.pokemon)
     const dispatch = useDispatch()
-
 
     useEffect(() => {
         dispatch(getPokemon(10000, 0));
+        dispatch(getPokemonTypes());
     }, [dispatch])
 
     const {Meta} = Card;
-    let nimadir;
+    let searchTimeout;
 
+    const handleChange = (tag) => {
+        setSelectedTags(tag);
+        dispatch(filterByTag(tag))
+    };
 
-    const handleChange = (tag, checked) => {
-        const nextSelectedTags = checked
-            ? [...selectedTags, tag]
-            : selectedTags.filter((t) => t !== tag);
-        setSelectedTags(nextSelectedTags);
+    const handleChangeOffset = (tag) => {
+        if (tag !== selectedOffset){
+            setSelectedOffset(tag);
+            dispatch(updateState({limit: tag}))
+            dispatch(getMorePokemon(0, tag, true))
+        }
     };
 
     const handleSearch = (e) => {
-        clearInterval(nimadir)
-        nimadir = setTimeout(() => {
+        clearInterval(searchTimeout)
+        searchTimeout = setTimeout(() => {
+            setSearch(e.target.value);
             dispatch(searchPokemon(e.target.value))
         }, 1000)
+    }
+
+    const handleGetMorePokemon = () => {
+        dispatch(getMorePokemon(page, limit))
     }
     return (
         <div>
             <Row gutter={{xs: 8, sm: 16, md: 24, lg: 32}}>
-                <Col span={12} offset={6}>
+                <Col xs={{span: 24}} sm={{span: 12}} md={{span: 8, offset: 8}} lg={{span: 8, offset: 8}} xl={{span: 12, offset: 6}} xxl={{span: 8, offset: 8}}>
                     <Input placeholder="Search" onChange={handleSearch} prefix={<SearchOutlined/>}/>
                 </Col>
             </Row>
+            <div className="tag-content">
+                {types.map(tag => (
+                    <CheckableTag
+                        color="magenta"
+                        key={tag.name}
+                        checked={selectedTags === tag.name}
+                        onChange={(checked) => handleChange(tag.name === selectedTags ? "" : tag.name, checked)}
+                    >
+                        {tag.name}
+                    </CheckableTag>
+                ))}
+            </div>
+            <div className="tag-content">
+                {offsets.map(tag => (
+                    <CheckableTag
+                        color="magenta"
+                        key={tag}
+                        checked={selectedOffset === tag}
+                        onChange={(checked) => handleChangeOffset(tag, checked)}
+                    >
+                        {tag}
+                    </CheckableTag>
+                ))}
+            </div>
             <Row gutter={{xs: 8, sm: 16, md: 24, lg: 32}}>
                 {/*{pokemonList && pokemonList.filter((item, index) => (index >= page * limit && index < (page + 1) * limit) && (search.length > 0 ? item.name.toLowerCase().includes(search.toLowerCase()) : true)).map((item, index) => (*/}
-                {pokemonShow && pokemonShow.map((item, index) => (
-                    <Col span={6} key={item.name}>
+                {pokemonShow && pokemonShow.sort((a, b) => a.originalIndex - b.originalIndex).map((item, index) => (
+                    <Col xs={{span: 24}} sm={{span: 12}} md={{span: 8}} lg={{span: 8}} xl={{span: 6}} xxl={{span: 4}} key={item.name}>
                         <div className="col-padding">
                             <Card
                                 hoverable
@@ -63,8 +98,8 @@ const Pokemon = (props) => {
                                     <CheckableTag
                                         color="magenta"
                                         key={tag.type.name}
-                                        checked={selectedTags.includes(tag.type.name)}
-                                        onChange={(checked) => handleChange(tag.type.name, checked)}
+                                        checked={selectedTags === tag.type.name}
+                                        // onChange={(checked) => handleChange(tag.type.name, checked)}
                                     >
                                         {tag.type.name}
                                     </CheckableTag>
@@ -76,6 +111,8 @@ const Pokemon = (props) => {
                     </Col>
                 ))}
             </Row>
+
+            {search.length === 0 && selectedTags.length === 0 ? <Button className="btn-style" onClick={handleGetMorePokemon}>More</Button> : ""}
 
             <Modal title={selectedPokemon?.name} open={isModalOpen} footer={null} onCancel={() => {
                 setIsModalOpen(false);

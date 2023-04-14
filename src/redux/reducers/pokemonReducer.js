@@ -1,7 +1,7 @@
 import {UPDATE_STATE_POKEMON} from "../types";
 
 const initialState = {
-    page: 0, limit: 10, pokemonList: [], pokemonShow: []
+    page: 1, limit: 12, pokemonList: [], pokemonShow: [], types: []
 }
 
 export const pokemonReducer = (state = initialState, action) => {
