@@ -1,10 +1,15 @@
 import React from 'react';
-
+import {BrowserRouter, Switch, Route, Redirect} from "react-router-dom"
+import Pokemon from "./pages/Pokemon";
+import AdminLayout from "./layouts/AdminLayout";
 const App = () => {
     return (
-        <div>
-
-        </div>
+        <BrowserRouter>
+            <Switch>
+                <Route path="/admin" component={AdminLayout}/>
+                <Redirect from="/" to="/admin/pokemon"/>
+            </Switch>
+        </BrowserRouter>
     );
 };
 
